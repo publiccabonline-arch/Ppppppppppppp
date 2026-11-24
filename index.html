@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Public Cab — Ride • Parcel • Shop • Care</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --navy: #0B1221;
+            --navy-soft: #131E36;
+            --gold: #FBBF24;
+            --gold-hover: #F59E0B;
+            --bg-page: #F8FAFC;
+            --bg-white: #FFFFFF;
+            --text-dark: #0F172A;
+            --text-muted: #64748B;
+            --border-light: #E2E8F0;
+            --green: #16A34A;
+            --red: #DC2626;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', 'Hind Siliguri', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            background-color: var(--bg-page);
+            color: var(--text-dark);
+            width: 100%;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .mobile-ui-wrapper {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            background: var(--bg-page);
+            min-height: 100vh;
+            padding-bottom: 78px;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .app-top-bar {
+            background: var(--navy);
+            color: #FFFFFF;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+        }
+
+        .top-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-btn {
+            background: transparent;
+            border: none;
+            color: #FFFFFF;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .brand-circle {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--gold);
+            color: var(--navy);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .brand-info h1 {
+            font-size: 17px;
+            font-weight: 800;
+            color: #FFFFFF;
+            line-height: 1.15;
+        }
+
+        .brand-info p {
+            font-size: 11px;
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bell-btn {
+            position: relative;
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            color: #FFFFFF;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .bell-badge {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            background: #EF4444;
+            color: #FFFFFF;
+            font-size: 10px;
+            font-weight: 800;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+        }
+
+        .profile-circle {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--gold);
+            color: var(--navy);
+            border: none;
+            font-size: 15px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .role-strip {
+            background: var(--navy-soft);
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .role-tab {
+            flex: 1;
+            background: rgba(255,255,255,0.06);
+            color: #CBD5E1;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 4px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .role-tab.active {
+            background: var(--gold);
+            color: var(--navy);
+        }
+
+        .page-body {
+            padding: 12px;
+        }
+
+        .trip-summary-banner {
+            background: var(--navy);
+            color: #FFFFFF;
+            border-radius: 14px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(11, 18, 33, 0.14);
+        }
+
+        .trip-summary-banner .dist {
+            font-size: 15px;
+            font-weight: 800;
+            color: #FFFFFF;
+        }
+
+        .trip-summary-banner .split {
+            font-size: 13px;
+            color: #CBD5E1;
+            font-weight: 600;
+        }
+
+        .trip-summary-banner .fare-amt {
+            font-size: 20px;
+            font-weight: 800;
+            color: #4ADE80;
+        }
+
+        .sec-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 10px 0 8px;
+        }
+
+        .sec-head-title {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            color: var(--navy);
+            text-transform: uppercase;
+        }
+
+        .timing-pill {
+            background: #DCFCE7;
+            color: #15803D;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 999px;
+        }
+
+        .loc-card {
+            background: var(--bg-white);
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            padding: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .loc-row {
+            display: flex;
+            align-items: center;
+            background: #F8FAFC;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 5px 8px;
+            gap: 8px;
+        }
+
+        .loc-row input {
+            flex: 1;
+            min-width: 0;
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            color: var(--text-dark);
+            outline: none;
+        }
+
+        .mini-btn {
+            background: #FEF3C7;
+            color: #92400E;
+            border: 1px solid #FDE68A;
+            border-radius: 7px;
+            padding: 5px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .mini-btn:active {
+            background: var(--gold);
+            color: var(--navy);
+        }
+
+        .map-box {
+            background: var(--bg-white);
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        #mapCanvas {
+            width: 100%;
+            height: 190px;
+            z-index: 1;
+        }
+
+        .map-caption {
+            background: #FEF9C3;
+            color: #713F12;
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pin-mode-btn {
+            background: var(--navy);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .veh-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .veh-card {
+            background: var(--bg-white);
+            border: 1.5px solid var(--border-light);
+            border-radius: 14px;
+            padding: 10px 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 92px;
+        }
+
+        .veh-card.selected {
+            background: var(--gold);
+            border-color: var(--navy);
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
+        }
+
+        .veh-card i {
+            font-size: 20px;
+            color: var(--gold-hover);
+            margin-bottom: 5px;
+        }
+
+        .veh-card.selected i {
+            color: var(--navy);
+        }
+
+        .veh-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-dark);
+            line-height: 1.15;
+        }
+
+        .veh-fare {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .veh-card.selected .veh-fare {
+            color: var(--navy);
+        }
+
+        .veh-sub {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .book-now-btn {
+            width: 100%;
+            background: var(--gold);
+            color: var(--navy);
+            border: none;
+            border-radius: 14px;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(251, 191, 36, 0.35);
+            margin-bottom: 14px;
+        }
+
+        .book-now-btn:active {
+            background: var(--gold-hover);
+        }
+
+        .white-card {
+            background: var(--bg-white);
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 9px 10px;
+            font-size: 13px;
+            color: var(--text-dark);
+            background: #F8FAFC;
+            margin-bottom: 8px;
+        }
+
+        .btn-dark {
+            background: var(--navy);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 10px;
+            padding: 9px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-green {
+            background: var(--green);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 10px;
+            padding: 9px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-gmap {
+            background: #1D4ED8;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .otp-chip {
+            background: var(--gold);
+            color: var(--navy);
+            font-weight: 800;
+            font-size: 16px;
+            letter-spacing: 2px;
+            padding: 3px 10px;
+            border-radius: 8px;
+        }
+
+        .fare-popup-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(11, 18, 33, 0.78);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .fare-square-box {
+            width: 320px;
+            height: 320px;
+            background: var(--navy);
+            color: #FFFFFF;
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            text-align: center;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+        }
+
+        .digital-fare-readout {
+            background: #060A14;
+            border: 1px solid rgba(74, 222, 128, 0.4);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 32px;
+            font-weight: 800;
+            color: #4ADE80;
+        }
+
+        .status-toast {
+            position: fixed;
+            top: 64px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--navy);
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 9000;
+            display: none;
+            max-width: 92vw;
+            text-align: center;
+        }
+
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 480px;
+            background: var(--navy);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 4px;
+            z-index: 200;
+        }
+
+        .b-tab {
+            background: transparent;
+            border: none;
+            color: #94A3B8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .b-tab.active {
+            color: var(--gold);
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="statusToast" class="status-toast"></div>
+
+    <!-- Four-Cornered Digital Fare Popup (Both Customer & Driver) -->
+    <div id="farePopupModal" class="fare-popup-backdrop">
+        <div class="fare-square-box">
+            <div style="font-size: 12px; font-weight: 800; color: var(--gold); letter-spacing: 1px;">
+                DIGITAL FARE RECEIPT
+            </div>
+            <div>
+                <div style="font-size: 11px; color: #94A3B8; margin-bottom: 4px;">রাইড সম্পন্ন • মোট ভাড়া</div>
+                <div class="digital-fare-readout" id="popupAmt">₹0</div>
+                <div style="font-size: 11px; color: #E2E8F0; margin-top: 6px;" id="popupRoute">-</div>
+            </div>
+            <button type="button" class="book-now-btn" style="margin: 0; padding: 9px; font-size: 13px;" onclick="closeFarePopup()">
+                ঠিক আছে
+            </button>
+        </div>
+    </div>
+
+    <div class="mobile-ui-wrapper">
+        <header class="app-top-bar">
+            <div class="top-left">
+                <button type="button" class="menu-btn" onclick="switchTab('admin')"><i class="fa-solid fa-bars"></i></button>
+                <div class="brand-circle"><i class="fa-solid fa-taxi"></i></div>
+                <div class="brand-info">
+                    <h1>Public Cab</h1>
+                    <p>Ride • Parcel • Shop • Care</p>
+                </div>
+            </div>
+            <div class="top-right">
+                <button type="button" class="bell-btn" onclick="switchTab('driver')" title="Live Requests">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="bell-badge" id="reqBadgeCount">0</span>
+                </button>
+                <button type="button" class="profile-circle" onclick="switchTab('driver')" title="Driver / Profile">
+                    <i class="fa-solid fa-user"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="role-strip">
+            <button type="button" class="role-tab active" id="rTabCustomer" onclick="switchTab('customer')">কাস্টমার বুকিং</button>
+            <button type="button" class="role-tab" id="rTabDriver" onclick="switchTab('driver')">রাইডার প্যানেল</button>
+            <button type="button" class="role-tab" id="rTabAdmin" onclick="switchTab('admin')">এডমিন কন্ট্রোল</button>
+        </div>
+
+        <!-- CUSTOMER HOME -->
+        <main id="secCustomer" class="page-body">
+            <div class="trip-summary-banner">
+                <span class="dist" id="sumKm">3.0 km</span>
+                <span class="split" id="sumSplit">₹25 + ₹0</span>
+                <span class="fare-amt" id="sumFare">₹25</span>
+            </div>
+
+            <div class="sec-head">
+                <span class="sec-head-title">SELECT VEHICLE CATEGORY</span>
+                <span class="timing-pill" id="activeTimingBadge">Timing: 24/7 Active</span>
+            </div>
+
+            <div class="loc-card">
+                <input type="text" id="custName" class="form-input" style="margin-bottom:0;" placeholder="কাস্টমারের নাম">
+                <input type="tel" id="custPhone" class="form-input" style="margin-bottom:0;" placeholder="মোবাইল নম্বর">
+
+                <div class="loc-row">
+                    <i class="fa-solid fa-circle-dot" style="color:#16A34A; font-size:13px;"></i>
+                    <input type="text" id="pickupLoc" placeholder="পিকআপ লোকেশন..." oninput="updateFareCalc()">
+                    <button type="button" class="mini-btn" onclick="useGPS('pickup')"><i class="fa-solid fa-location-crosshairs"></i> GPS</button>
+                    <button type="button" class="mini-btn" onclick="selectOnMap('pickup')"><i class="fa-solid fa-map-pin"></i> ম্যাপ</button>
+                </div>
+
+                <div class="loc-row">
+                    <i class="fa-solid fa-location-dot" style="color:#DC2626; font-size:13px;"></i>
+                    <input type="text" id="dropLoc" placeholder="ড্রপ লোকেশন..." oninput="updateFareCalc()">
+                    <button type="button" class="mini-btn" onclick="useGPS('drop')"><i class="fa-solid fa-location-crosshairs"></i> GPS</button>
+                    <button type="button" class="mini-btn" onclick="selectOnMap('drop')"><i class="fa-solid fa-map-pin"></i> ম্যাপ</button>
+                </div>
+            </div>
+
+            <div class="map-box">
+                <div id="mapCanvas"></div>
+                <div class="map-caption">
+                    <span id="mapModeCaption">ম্যাপে ক্লিক করে পিকআপ লোকেশন সেট করুন</span>
+                    <button type="button" class="pin-mode-btn" id="togglePinBtn" onclick="togglePinMode()">ড্রপ পিন করুন</button>
+                </div>
+            </div>
+
+            <div class="veh-grid" id="vehGrid"></div>
+
+            <button type="button" class="book-now-btn" onclick="createBooking()">
+                Book Ride Now →
+            </button>
+
+            <div id="custLiveBookingCard" class="white-card hidden" style="border-color: var(--gold);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <strong style="font-size:13px;" id="custBookStatus">ড্রাইভার খোঁজা হচ্ছে...</strong>
+                    <span class="otp-chip" id="custBookOtp">----</span>
+                </div>
+                <div id="custBookDriverDetails" style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">
+                    রাইডার অ্যাকসেপ্ট করলে এখানে রাইডারের তথ্য ও নেভিগেশন আসবে।
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <a id="custGmapLink" href="#" target="_blank" class="btn-gmap"><i class="fa-solid fa-route"></i> Google Maps</a>
+                    <button type="button" class="btn-dark" onclick="cancelBooking()">বাতিল</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- DRIVER PANEL -->
+        <main id="secDriver" class="page-body hidden">
+            <div id="drvRegCard" class="white-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <strong style="font-size:14px;">রাইডার রেজিস্ট্রেশন</strong>
+                    <button type="button" class="mini-btn" onclick="toggleDrvLogin()">আগে অ্যাকাউন্ট থাকলে লগইন</button>
+                </div>
+
+                <div id="drvLoginBox" class="hidden" style="margin-bottom:10px; padding:8px; background:#F8FAFC; border-radius:10px;">
+                    <input type="tel" id="drvLoginPhone" class="form-input" placeholder="রেজিস্টার্ড মোবাইল নম্বর">
+                    <button type="button" class="btn-green" onclick="loginDriver()">লগইন করুন</button>
+                </div>
+
+                <form onsubmit="submitDriverReg(event)">
+                    <input type="text" id="dName" class="form-input" required placeholder="ড্রাইভারের নাম">
+                    <input type="tel" id="dPhone" class="form-input" required placeholder="মোবাইল নম্বর">
+                    <select id="dVehicle" class="form-select">
+                        <option value="Bike">Bike</option>
+                        <option value="Toto / Auto">Toto / Auto</option>
+                        <option value="4-Wheeler">4-Wheeler</option>
+                        <option value="Lorry">Lorry</option>
+                        <option value="Ambulance">Ambulance</option>
+                        <option value="Parcel">Parcel</option>
+                    </select>
+                    <input type="text" id="dPlate" class="form-input" required placeholder="গাড়ির নম্বর প্লেট">
+                    <input type="text" id="dArea" class="form-input" required placeholder="এরিয়ার নাম">
+
+                    <div class="loc-row" style="margin-bottom:8px;">
+                        <input type="text" id="dGps" placeholder="কারেন্ট GPS লোকেশন" readonly required>
+                        <button type="button" class="mini-btn" onclick="getDriverGPS()"><i class="fa-solid fa-location-crosshairs"></i> GPS</button>
+                    </div>
+
+                    <div style="font-size:12px; font-weight:700; margin:6px 0 4px;">ডকুমেন্টস (প্রোফাইল ফটো, আইডি কার্ড, লাইসেন্স, RC বুক):</div>
+                    <label style="font-size:11px; color:var(--text-muted);">প্রোফাইল ফটো *</label>
+                    <input type="file" accept="image/*" required class="form-input" onchange="readDoc(this,'profile')">
+                    <label style="font-size:11px; color:var(--text-muted);">আইডি কার্ড *</label>
+                    <input type="file" accept="image/*" required class="form-input" onchange="readDoc(this,'idCard')">
+                    <label style="font-size:11px; color:var(--text-muted);">ড্রাইভিং লাইসেন্স *</label>
+                    <input type="file" accept="image/*" required class="form-input" onchange="readDoc(this,'license')">
+                    <label style="font-size:11px; color:var(--text-muted);">আরসি বুক (RC Book) *</label>
+                    <input type="file" accept="image/*" required class="form-input" onchange="readDoc(this,'rcBook')">
+
+                    <button type="submit" class="book-now-btn" style="margin-bottom:0;">রেজিস্ট্রেশন সম্পন্ন করুন</button>
+                </form>
+            </div>
+
+            <div id="drvDutyCard" class="white-card hidden">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <div>
+                        <strong id="drvActiveTitle" style="font-size:14px;">রাইডার</strong>
+                        <div id="drvActiveSub" style="font-size:11px; color:var(--text-muted);">এরিয়া • গাড়ি</div>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="btn-green" id="drvOnlineBtn" onclick="toggleDrvOnline()">অনলাইন</button>
+                        <button type="button" class="btn-dark" onclick="logoutDriver()">আউট</button>
+                    </div>
+                </div>
+
+                <div id="drvActiveTripBox" class="hidden" style="background:#FFFBEB; border:1px solid var(--gold); border-radius:10px; padding:10px; margin-bottom:10px;">
+                    <div id="drvTripInfo" style="font-size:12px; margin-bottom:8px;"></div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+                        <a id="drvNavPickup" href="#" target="_blank" class="btn-gmap"><i class="fa-solid fa-location-arrow"></i> পিকআপ নেভিগেশন</a>
+                        <a id="drvNavDrop" href="#" target="_blank" class="btn-gmap" style="background:#15803D;"><i class="fa-solid fa-flag-checkered"></i> ড্রপ নেভিগেশন</a>
+                    </div>
+                    <div id="drvOtpArea" style="display:flex; gap:6px;">
+                        <input type="text" id="drvOtpInput" class="form-input" style="margin-bottom:0;" placeholder="OTP লিখুন">
+                        <button type="button" class="btn-dark" onclick="verifyOtpStart()">শুরু করুন</button>
+                    </div>
+                    <button type="button" id="drvFinishBtn" class="btn-green hidden" style="width:100%;" onclick="finishTrip()">রাইড শেষ করুন</button>
+                </div>
+
+                <div style="font-size:12px; font-weight:800; margin-bottom:6px;">নতুন ভাড়ার রিকোয়েস্ট</div>
+                <div id="drvRequestsContainer"></div>
+            </div>
+        </main>
+
+        <!-- ADMIN PANEL -->
+        <main id="secAdmin" class="page-body hidden">
+            <div class="white-card">
+                <strong style="font-size:14px; display:block; margin-bottom:8px;">লাইভ পরিসংখ্যান</strong>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
+                    <div style="background:#F8FAFC; padding:8px; border-radius:8px;">আজকের নতুন কাস্টমার: <strong id="admTodayCust">0</strong></div>
+                    <div style="background:#F8FAFC; padding:8px; border-radius:8px;">মোট কাস্টমার: <strong id="admAllCust">0</strong></div>
+                    <div style="background:#F8FAFC; padding:8px; border-radius:8px;">লাইভ বুকিং: <strong id="admLiveBook">0</strong></div>
+                    <div style="background:#F8FAFC; padding:8px; border-radius:8px;">মোট ড্রাইভার: <strong id="admAllDrv">0</strong></div>
+                </div>
+            </div>
+
+            <div class="white-card">
+                <strong style="font-size:13px; display:block; margin-bottom:6px;">রেডিয়াস রেঞ্জ (km) সেটিংস</strong>
+                <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                    <input type="number" id="admRadiusKm" class="form-input" style="width:80px; margin-bottom:0;" value="5" min="1" max="100">
+                    <span style="font-size:12px; font-weight:700;">km</span>
+                    <button type="button" class="btn-green" onclick="setRadius(true)">চালু (ON)</button>
+                    <button type="button" class="btn-dark" id="admRadiusToggleBtn" onclick="toggleRadius()">বন্ধ করুন</button>
+                </div>
+            </div>
+
+            <div class="white-card">
+                <strong style="font-size:13px; display:block; margin-bottom:6px;">লোকেশন অনুযায়ী ড্রাইভার খুঁজুন</strong>
+                <input type="text" id="admAreaSearch" class="form-input" placeholder="এরিয়ার নাম লিখুন..." oninput="renderAdmin()">
+                <div id="admDriversByArea"></div>
+            </div>
+
+            <div class="white-card">
+                <strong style="font-size:13px; display:block; margin-bottom:6px;">লাইভ বুকিং ও সকল কাস্টমার</strong>
+                <div id="admBookingsBox" style="margin-bottom:8px;"></div>
+                <div id="admCustomersBox"></div>
+            </div>
+        </main>
+
+        <nav class="bottom-bar">
+            <button type="button" class="b-tab active" id="bHome" onclick="switchTab('customer')"><i class="fa-solid fa-house"></i><span>Home</span></button>
+            <button type="button" class="b-tab" id="bWallet" onclick="switchTab('admin')"><i class="fa-solid fa-wallet"></i><span>Wallet</span></button>
+            <button type="button" class="b-tab" id="bHistory" onclick="switchTab('admin')"><i class="fa-solid fa-clock-rotate-left"></i><span>History</span></button>
+            <button type="button" class="b-tab" id="bServices" onclick="switchTab('driver')"><i class="fa-solid fa-store"></i><span>Services</span></button>
+            <button type="button" class="b-tab" id="bProfile" onclick="switchTab('driver')"><i class="fa-solid fa-user"></i><span>Profile</span></button>
+        </nav>
+    </div>
+
+    <script>
+        const firebaseConfig = { databaseURL: "https://public-service-default-rtdb.firebaseio.com" };
+        let db = null;
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        } catch (e) {}
+
+        const VEHICLES = [
+            { id: 'bike', name: 'Bike', base: 25, perKm: 8, icon: 'fa-motorcycle', sub: '24/7' },
+            { id: 'toto', name: 'Toto / Auto', base: 35, perKm: 12, icon: 'fa-shuttle-van', sub: '24/7' },
+            { id: 'car', name: '4-Wheeler', base: 60, perKm: 18, icon: 'fa-car', sub: '24/7' },
+            { id: 'lorry', name: 'Lorry', base: 150, perKm: 30, icon: 'fa-truck', sub: '24/7' },
+            { id: 'ambulance', name: 'Ambulance', base: 200, perKm: 25, icon: 'fa-truck-medical', sub: '24/7' },
+            { id: 'parcel', name: 'Parcel', base: 30, perKm: 10, icon: 'fa-box-open', sub: '24/7' }
+        ];
+
+        let state = {
+            vehId: 'bike',
+            pickup: { lat: 23.0760, lng: 88.5200 },
+            drop: { lat: 23.0950, lng: 88.5350 },
+            pinMode: 'pickup',
+            km: 3.0,
+            fare: 25,
+            radiusKm: 5,
+            radiusOn: true,
+            drivers: {},
+            bookings: {},
+            customers: {},
+            activeBookingId: localStorage.getItem('pc_b_id') || null,
+            driverId: localStorage.getItem('pc_d_id') || null,
+            shownPopupId: localStorage.getItem('pc_p_id') || null
+        };
+
+        function toast(msg) {
+            const el = document.getElementById('statusToast');
+            el.textContent = msg;
+            el.style.display = 'block';
+            clearTimeout(window._tt);
+            window._tt = setTimeout(() => { el.style.display = 'none'; }, 3000);
+        }
+
+        function cleanRecords(raw, reqKeys) {
+            if (!raw || typeof raw !== 'object') return {};
+            const out = {};
+            Object.keys(raw).forEach(k => {
+                const v = raw[k];
+                if (!v || typeof v !== 'object') return;
+                const txt = JSON.stringify(v).toLowerCase();
+                if (txt.includes('"undefined"') || txt.includes('undefined-undefined')) return;
+                if (reqKeys.every(rk => v[rk] !== undefined && String(v[rk]).trim() !== '')) {
+                    out[k] = v;
+                }
+            });
+            return out;
+        }
+
+        let map, pMarker, dMarker, rLine;
+        function initMap() {
+            map = L.map('mapCanvas').setView([state.pickup.lat, state.pickup.lng], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(map);
+            pMarker = L.marker([state.pickup.lat, state.pickup.lng], { draggable: true }).addTo(map);
+            dMarker = L.marker([state.drop.lat, state.drop.lng], { draggable: true }).addTo(map);
+            rLine = L.polyline([[state.pickup.lat, state.pickup.lng], [state.drop.lat, state.drop.lng]], { color: '#0B1221', weight: 3 }).addTo(map);
+
+            map.on('click', (e) => {
+                const { lat, lng } = e.latlng;
+                if (state.pinMode === 'pickup') {
+                    state.pickup = { lat, lng };
+                    pMarker.setLatLng([lat, lng]);
+                    document.getElementById('pickupLoc').value = `ম্যাপ (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+                    setPinMode('drop');
+                    toast('পিকআপ পিন সেট হয়েছে');
+                } else {
+                    state.drop = { lat, lng };
+                    dMarker.setLatLng([lat, lng]);
+                    document.getElementById('dropLoc').value = `ম্যাপ (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+                    toast('ড্রপ পিন সেট হয়েছে');
+                }
+                refreshRoute();
+            });
+
+            pMarker.on('dragend', () => { const pos = pMarker.getLatLng(); state.pickup = { lat: pos.lat, lng: pos.lng }; refreshRoute(); });
+            dMarker.on('dragend', () => { const pos = dMarker.getLatLng(); state.drop = { lat: pos.lat, lng: pos.lng }; refreshRoute(); });
+        }
+
+        function setPinMode(mode) {
+            state.pinMode = mode;
+            document.getElementById('mapModeCaption').textContent = mode === 'pickup' ? 'ম্যাপে ক্লিক করে পিকআপ লোকেশন সেট করুন' : 'ম্যাপে ক্লিক করে ড্রপ লোকেশন সেট করুন';
+            document.getElementById('togglePinBtn').textContent = mode === 'pickup' ? 'ড্রপ পিন করুন' : 'পিকআপ পিন করুন';
+        }
+
+        function togglePinMode() {
+            setPinMode(state.pinMode === 'pickup' ? 'drop' : 'pickup');
+        }
+
+        function selectOnMap(mode) {
+            setPinMode(mode);
+            document.getElementById('mapCanvas').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function useGPS(target) {
+            if (!navigator.geolocation) { toast('GPS সাপোর্ট করছে না'); return; }
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                if (target === 'pickup') {
+                    state.pickup = { lat, lng };
+                    pMarker.setLatLng([lat, lng]);
+                    document.getElementById('pickupLoc').value = `GPS (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+                } else {
+                    state.drop = { lat, lng };
+                    dMarker.setLatLng([lat, lng]);
+                    document.getElementById('dropLoc').value = `GPS (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+                }
+                refreshRoute();
+                toast('GPS লোকেশন সেট হয়েছে');
+            }, () => toast('GPS লোকেশন পাওয়া যায়নি'));
+        }
+
+        function distKm(a, b) {
+            const R = 6371, dLat = (b.lat - a.lat) * Math.PI / 180, dLon = (b.lng - a.lng) * Math.PI / 180;
+            const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+        }
+
+        function refreshRoute() {
+            rLine.setLatLngs([[state.pickup.lat, state.pickup.lng], [state.drop.lat, state.drop.lng]]);
+            map.fitBounds(rLine.getBounds(), { padding: [20, 20] });
+            state.km = Math.max(1.5, parseFloat((distKm(state.pickup, state.drop) * 1.25).toFixed(1)));
+            updateFareCalc();
+        }
+
+        function updateFareCalc() {
+            const v = VEHICLES.find(x => x.id === state.vehId) || VEHICLES[0];
+            const extra = Math.round(Math.max(0, state.km - 3) * v.perKm);
+            state.fare = v.base + extra;
+            document.getElementById('sumKm').textContent = `${state.km} km`;
+            document.getElementById('sumSplit').textContent = `₹${v.base} + ₹${extra}`;
+            document.getElementById('sumFare').textContent = `₹${state.fare}`;
+            renderVehicles();
+        }
+
+        function renderVehicles() {
+            document.getElementById('vehGrid').innerHTML = VEHICLES.map(v => {
+                const est = v.base + Math.round(Math.max(0, state.km - 3) * v.perKm);
+                return `
+                    <div class="veh-card ${state.vehId === v.id ? 'selected' : ''}" onclick="state.vehId='${v.id}'; updateFareCalc();">
+                        <i class="fa-solid ${v.icon}"></i>
+                        <div class="veh-title">${v.name}</div>
+                        <div class="veh-fare">₹${est} (${state.km}km)</div>
+                        <div class="veh-sub">${v.sub}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function createBooking() {
+            const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+            const pAddr = document.getElementById('pickupLoc').value.trim();
+            const dAddr = document.getElementById('dropLoc').value.trim();
+            if (!name || !phone || !pAddr || !dAddr) { toast('নাম, মোবাইল, পিকআপ ও ড্রপ দিন'); return; }
+
+            const v = VEHICLES.find(x => x.id === state.vehId);
+            const id = 'BK_' + Date.now();
+            const otp = String(Math.floor(1000 + Math.random() * 9000));
+            const today = new Date().toISOString().split('T')[0];
+
+            const bk = {
+                id, customerName: name, customerPhone: phone,
+                pickupAddress: pAddr, dropAddress: dAddr,
+                pickupCoords: state.pickup, dropCoords: state.drop,
+                vehicleType: v.name, distanceKm: state.km, fare: state.fare,
+                otp, status: 'searching', createdAt: Date.now(), dateStr: today
+            };
+
+            const cKey = 'CUST_' + phone.replace(/\D/g, '');
+            const prevC = state.customers[cKey];
+            const cust = {
+                id: cKey, name, phone,
+                joinedDate: prevC ? prevC.joinedDate : today,
+                totalRides: (prevC ? (prevC.totalRides || 0) : 0) + 1
+            };
+
+            state.activeBookingId = id;
+            localStorage.setItem('pc_b_id', id);
+            if (db) {
+                db.ref(`public_cab/bookings/${id}`).set(bk);
+                db.ref(`public_cab/customers/${cKey}`).set(cust);
+            } else {
+                state.bookings[id] = bk;
+                state.customers[cKey] = cust;
+                renderAll();
+            }
+            toast('বুকিং পাঠানো হয়েছে');
+        }
+
+        function cancelBooking() {
+            if (!state.activeBookingId) return;
+            if (db) db.ref(`public_cab/bookings/${state.activeBookingId}/status`).set('cancelled');
+            else if (state.bookings[state.activeBookingId]) state.bookings[state.activeBookingId].status = 'cancelled';
+            state.activeBookingId = null;
+            localStorage.removeItem('pc_b_id');
+            renderAll();
+        }
+
+        let docs = {};
+        let drvCoords = null;
+        function readDoc(input, key) {
+            const f = input.files[0];
+            if (!f) return;
+            const r = new FileReader();
+            r.onload = (e) => { docs[key] = e.target.result; };
+            r.readAsDataURL(f);
+        }
+
+        function getDriverGPS() {
+            navigator.geolocation?.getCurrentPosition((pos) => {
+                drvCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                document.getElementById('dGps').value = `${drvCoords.lat.toFixed(4)}, ${drvCoords.lng.toFixed(4)}`;
+            }, () => {
+                drvCoords = state.pickup;
+                document.getElementById('dGps').value = `${drvCoords.lat.toFixed(4)}, ${drvCoords.lng.toFixed(4)}`;
+            });
+        }
+
+        function submitDriverReg(e) {
+            e.preventDefault();
+            if (!docs.profile || !docs.idCard || !docs.license || !docs.rcBook) { toast('সব ডকুমেন্টস দিন'); return; }
+            const phone = document.getElementById('dPhone').value.trim();
+            const id = 'DRV_' + phone.replace(/\D/g, '');
+            const drv = {
+                id,
+                name: document.getElementById('dName').value.trim(),
+                phone,
+                vehicleType: document.getElementById('dVehicle').value,
+                plateNumber: document.getElementById('dPlate').value.trim().toUpperCase(),
+                areaName: document.getElementById('dArea').value.trim(),
+                coords: drvCoords || state.pickup,
+                isOnline: true,
+                docs
+            };
+            state.driverId = id;
+            localStorage.setItem('pc_d_id', id);
+            if (db) db.ref(`public_cab/drivers/${id}`).set(drv);
+            else { state.drivers[id] = drv; renderAll(); }
+            toast('রাইডার রেজিস্ট্রেশন সফল');
+        }
+
+        function toggleDrvLogin() { document.getElementById('drvLoginBox').classList.toggle('hidden'); }
+        function loginDriver() {
+            const ph = document.getElementById('drvLoginPhone').value.trim().replace(/\D/g, '');
+            const found = Object.values(state.drivers).find(d => d.phone.replace(/\D/g, '') === ph);
+            if (!found) { toast('রাইডার পাওয়া যায়নি'); return; }
+            state.driverId = found.id;
+            localStorage.setItem('pc_d_id', found.id);
+            renderAll();
+        }
+        function logoutDriver() { state.driverId = null; localStorage.removeItem('pc_d_id'); renderAll(); }
+
+        function toggleDrvOnline() {
+            const d = state.drivers[state.driverId];
+            if (!d) return;
+            const next = !d.isOnline;
+            if (db) db.ref(`public_cab/drivers/${d.id}/isOnline`).set(next);
+            else { d.isOnline = next; renderAll(); }
+        }
+
+        function acceptReq(bkId) {
+            const d = state.drivers[state.driverId];
+            if (!d) return;
+            const upd = { status: 'accepted', driverId: d.id, driverName: d.name, driverPhone: d.phone, driverPlate: d.plateNumber };
+            if (db) db.ref(`public_cab/bookings/${bkId}`).update(upd);
+            else { Object.assign(state.bookings[bkId], upd); renderAll(); }
+        }
+
+        function verifyOtpStart() {
+            const trip = Object.values(state.bookings).find(b => b.driverId === state.driverId && b.status === 'accepted');
+            if (!trip) return;
+            if (document.getElementById('drvOtpInput').value.trim() !== trip.otp) { toast('OTP মিলছে না'); return; }
+            if (db) db.ref(`public_cab/bookings/${trip.id}/status`).set('ongoing');
+            else { trip.status = 'ongoing'; renderAll(); }
+        }
+
+        function finishTrip() {
+            const trip = Object.values(state.bookings).find(b => b.driverId === state.driverId && (b.status === 'ongoing' || b.status === 'accepted'));
+            if (!trip) return;
+            if (db) db.ref(`public_cab/bookings/${trip.id}/status`).set('completed');
+            else { trip.status = 'completed'; renderAll(); }
+        }
+
+        function showFarePopup(bk) {
+            if (!bk || state.shownPopupId === bk.id) return;
+            state.shownPopupId = bk.id;
+            localStorage.setItem('pc_p_id', bk.id);
+            document.getElementById('popupAmt').textContent = `₹${bk.fare}`;
+            document.getElementById('popupRoute').textContent = `${bk.pickupAddress} → ${bk.dropAddress} (${bk.distanceKm} km)`;
+            document.getElementById('farePopupModal').style.display = 'flex';
+        }
+
+        function closeFarePopup() { document.getElementById('farePopupModal').style.display = 'none'; }
+
+        function setRadius(on) {
+            const val = parseFloat(document.getElementById('admRadiusKm').value) || 5;
+            state.radiusKm = val; state.radiusOn = on;
+            if (db) db.ref('public_cab/settings').update({ radiusKm: val, radiusEnabled: on });
+            renderAll();
+            toast(`রেঞ্জ ${val} km সেট হয়েছে`);
+        }
+
+        function toggleRadius() {
+            state.radiusOn = !state.radiusOn;
+            if (db) db.ref('public_cab/settings/radiusEnabled').set(state.radiusOn);
+            renderAll();
+        }
+
+        function switchTab(tab) {
+            ['customer', 'driver', 'admin'].forEach(t => {
+                document.getElementById('sec' + t[0].toUpperCase() + t.slice(1)).classList.toggle('hidden', t !== tab);
+                document.getElementById('rTab' + t[0].toUpperCase() + t.slice(1)).classList.toggle('active', t === tab);
+            });
+            if (tab === 'customer' && map) setTimeout(() => map.invalidateSize(), 120);
+            renderAll();
+        }
+
+        function renderAll() {
+            const drvs = Object.values(state.drivers);
+            const bks = Object.values(state.bookings).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            const custs = Object.values(state.customers);
+
+            document.getElementById('admRadiusKm').value = state.radiusKm;
+            document.getElementById('admRadiusToggleBtn').textContent = state.radiusOn ? 'বন্ধ করুন' : 'চালু করুন';
+
+            const activeB = state.activeBookingId ? state.bookings[state.activeBookingId] : null;
+            const bCard = document.getElementById('custLiveBookingCard');
+            if (activeB && activeB.status !== 'cancelled') {
+                bCard.classList.remove('hidden');
+                document.getElementById('custBookOtp').textContent = activeB.otp;
+                document.getElementById('custBookStatus').textContent = `স্ট্যাটাস: ${activeB.status}`;
+                document.getElementById('custBookDriverDetails').innerHTML = activeB.driverName
+                    ? `রাইডার: <strong>${activeB.driverName}</strong> (${activeB.driverPhone}) • ${activeB.driverPlate}`
+                    : 'কাছাকাছি রাইডার খোঁজা হচ্ছে...';
+                document.getElementById('custGmapLink').href = `https://www.google.com/maps/dir/?api=1&origin=${activeB.pickupCoords.lat},${activeB.pickupCoords.lng}&destination=${activeB.dropCoords.lat},${activeB.dropCoords.lng}`;
+                if (activeB.status === 'completed') showFarePopup(activeB);
+            } else {
+                bCard.classList.add('hidden');
+            }
+
+            const drv = state.driverId ? state.drivers[state.driverId] : null;
+            const openReqs = bks.filter(b => {
+                if (b.status !== 'searching') return false;
+                if (drv && state.radiusOn && drv.coords && b.pickupCoords) {
+                    return distKm(drv.coords, b.pickupCoords) <= state.radiusKm;
+                }
+                return true;
+            });
+            document.getElementById('reqBadgeCount').textContent = openReqs.length;
+
+            if (drv) {
+                document.getElementById('drvRegCard').classList.add('hidden');
+                document.getElementById('drvDutyCard').classList.remove('hidden');
+                document.getElementById('drvActiveTitle').textContent = drv.name;
+                document.getElementById('drvActiveSub').textContent = `${drv.areaName} • ${drv.vehicleType} (${drv.plateNumber})`;
+                document.getElementById('drvOnlineBtn').textContent = drv.isOnline ? 'অনলাইন' : 'অফলাইন';
+
+                const curTrip = bks.find(b => b.driverId === drv.id && (b.status === 'accepted' || b.status === 'ongoing'));
+                const tBox = document.getElementById('drvActiveTripBox');
+                if (curTrip) {
+                    tBox.classList.remove('hidden');
+                    document.getElementById('drvTripInfo').innerHTML = `কাস্টমার: <strong>${curTrip.customerName}</strong> (${curTrip.customerPhone})<br>${curTrip.pickupAddress} → ${curTrip.dropAddress} • <strong>₹${curTrip.fare}</strong>`;
+                    document.getElementById('drvNavPickup').href = `https://www.google.com/maps/dir/?api=1&destination=${curTrip.pickupCoords.lat},${curTrip.pickupCoords.lng}`;
+                    document.getElementById('drvNavDrop').href = `https://www.google.com/maps/dir/?api=1&destination=${curTrip.dropCoords.lat},${curTrip.dropCoords.lng}`;
+                    document.getElementById('drvOtpArea').classList.toggle('hidden', curTrip.status !== 'accepted');
+                    document.getElementById('drvFinishBtn').classList.toggle('hidden', curTrip.status !== 'ongoing');
+                } else {
+                    tBox.classList.add('hidden');
+                    const doneTrip = bks.find(b => b.driverId === drv.id && b.status === 'completed');
+                    if (doneTrip) showFarePopup(doneTrip);
+                }
+
+                document.getElementById('drvRequestsContainer').innerHTML = drv.isOnline && openReqs.length
+                    ? openReqs.map(r => `
+                        <div class="white-card" style="margin-bottom:8px;">
+                            <div style="font-size:12px; font-weight:800;">${r.vehicleType} • ₹${r.fare} (${r.distanceKm} km)</div>
+                            <div style="font-size:11px; color:var(--text-muted); margin:4px 0;">${r.pickupAddress} → ${r.dropAddress}</div>
+                            <button type="button" class="btn-green" onclick="acceptReq('${r.id}')">অ্যাকসেপ্ট করুন</button>
+                        </div>
+                    `).join('')
+                    : '<div style="font-size:12px; color:var(--text-muted);">কোনো নতুন রিকোয়েস্ট নেই</div>';
+            } else {
+                document.getElementById('drvRegCard').classList.remove('hidden');
+                document.getElementById('drvDutyCard').classList.add('hidden');
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('admTodayCust').textContent = custs.filter(c => c.joinedDate === today).length;
+            document.getElementById('admAllCust').textContent = custs.length;
+            document.getElementById('admLiveBook').textContent = bks.filter(b => ['searching','accepted','ongoing'].includes(b.status)).length;
+            document.getElementById('admAllDrv').textContent = drvs.length;
+
+            const q = (document.getElementById('admAreaSearch').value || '').toLowerCase().trim();
+            const matched = drvs.filter(d => !q || (d.areaName || '').toLowerCase().includes(q) || (d.name || '').toLowerCase().includes(q));
+            const byZone = {};
+            matched.forEach(d => { const z = d.areaName || 'অন্যান্য'; (byZone[z] = byZone[z] || []).push(d); });
+
+            document.getElementById('admDriversByArea').innerHTML = Object.keys(byZone).map(z => `
+                <div style="margin-top:8px;">
+                    <div style="font-size:12px; font-weight:800; color:var(--navy);">জোন: ${z} (${byZone[z].length})</div>
+                    ${byZone[z].map(d => `<div style="font-size:11px; padding:4px 0; border-bottom:1px solid #F1F5F9;">${d.name} • ${d.phone} • ${d.vehicleType} (${d.plateNumber}) • ${d.isOnline ? 'অনলাইন' : 'অফলাইন'}</div>`).join('')}
+                </div>
+            `).join('') || '<div style="font-size:12px; color:var(--text-muted);">ড্রাইভার নেই</div>';
+
+            document.getElementById('admBookingsBox').innerHTML = bks.slice(0, 6).map(b => `<div style="font-size:11px; padding:4px 0; border-bottom:1px solid #F1F5F9;"><strong>${b.customerName}</strong> (${b.vehicleType}) • ₹${b.fare} • ${b.status}</div>`).join('');
+            document.getElementById('admCustomersBox').innerHTML = custs.map(c => `<div style="font-size:11px; padding:4px 0; border-bottom:1px solid #F1F5F9;"><strong>${c.name}</strong> • ${c.phone} • রাইড: ${c.totalRides || 1}</div>`).join('');
+        }
+
+        if (db) {
+            db.ref('public_cab/drivers').on('value', s => { state.drivers = cleanRecords(s.val(), ['name', 'phone', 'areaName']); renderAll(); });
+            db.ref('public_cab/bookings').on('value', s => { state.bookings = cleanRecords(s.val(), ['customerName', 'pickupAddress', 'dropAddress']); renderAll(); });
+            db.ref('public_cab/customers').on('value', s => { state.customers = cleanRecords(s.val(), ['name', 'phone']); renderAll(); });
+            db.ref('public_cab/settings').on('value', s => {
+                const v = s.val();
+                if (v) { if (v.radiusKm) state.radiusKm = v.radiusKm; if (typeof v.radiusEnabled === 'boolean') state.radiusOn = v.radiusEnabled; renderAll(); }
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            updateFareCalc();
+            renderAll();
+        });
+    </script>
+</body>
+</html>
